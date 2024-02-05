@@ -1,5 +1,5 @@
 import { Combatant } from "../../types";
-import { attributeBonus, d20 } from "../../utils";
+import { attributeBonus, d20 } from "../../common/utils";
 import { v4 as uuid } from "uuid";
 
 export function buildCharacter(fragment: Partial<Combatant>): Combatant {

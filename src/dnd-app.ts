@@ -6,7 +6,7 @@ import "./dnd-creature";
 import "./dnd-menu";
 
 import { CombatContextObject, combatContext } from "./context";
-import { LogSeparator } from "./utils";
+import { LogSeparator } from "./common/utils";
 import { Combat, Combatant, ICombatController } from "./types";
 import CombatController from "./CombatController";
 import {

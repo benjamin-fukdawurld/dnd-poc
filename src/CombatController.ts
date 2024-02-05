@@ -9,7 +9,7 @@ import {
   ICombatController,
   ICombatantController,
 } from "./types";
-import { LogSeparator, attributeBonus, d20 } from "./utils";
+import { LogSeparator, attributeBonus, d20 } from "./common/utils";
 import { ifDefined } from "lit/directives/if-defined.js";
 
 import { getCombatantController } from "./components/factories/CombatantControllerFactory";

@@ -2,7 +2,7 @@ import { consume } from "@lit/context";
 import { LitElement, html, css, nothing } from "lit";
 import { CombatContextObject, combatContext } from "../context";
 import { AttributeNames, Combatant } from "../types";
-import { attributeBonus, formatBonus } from "../utils";
+import { attributeBonus, formatBonus } from "../common/utils";
 import { customElement, state } from "lit/decorators.js";
 
 @customElement("dnd-character-panel")

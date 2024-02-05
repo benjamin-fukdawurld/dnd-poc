@@ -1,5 +1,5 @@
 import { Combat, ICombatantController } from "../../types";
-import { attributeBonus, d20, dn } from "../../utils";
+import { attributeBonus, d20, dn } from "../../common/utils";
 import { getImage } from "./ImageFactory";
 
 export function buildBaseController(
