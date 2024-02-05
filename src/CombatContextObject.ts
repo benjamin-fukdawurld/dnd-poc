@@ -1,4 +1,5 @@
-import { Combat, ICombatController } from "./types";
+import { ICombatController } from "./combat/types";
+import { Combat } from "./common/types";
 
 export interface CombatContextObject {
   combat: Combat;

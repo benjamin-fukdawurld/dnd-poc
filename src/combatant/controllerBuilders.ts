@@ -1,9 +1,9 @@
-import { ICombatantController } from "../../combatant/types";
-import { Combat } from "../../common/types";
-import { attributeBonus, d20, dn } from "../../common/utils";
-import { getImage } from "./ImageFactory";
+import { ICombatantController } from "./types";
+import { Combat } from "../common/types";
+import { attributeBonus, d20, dn } from "../common/utils";
+import { getImage } from "../common/ImageFactory";
 
-export function buildBaseController(
+export function base(
   fragment: Partial<ICombatantController> &
     Pick<ICombatantController, "combatant">
 ): ICombatantController {
@@ -31,11 +31,11 @@ export function buildBaseController(
   };
 }
 
-export function buildCharacterController(
+export function character(
   fragment: Partial<ICombatantController> &
     Pick<ICombatantController, "combatant">
 ): ICombatantController {
-  return buildBaseController({
+  return base({
     attackRoll: function (this: ICombatantController): number {
       return d20() + attributeBonus(fragment.combatant.attributes.strength);
     },
@@ -46,11 +46,11 @@ export function buildCharacterController(
   });
 }
 
-export function buildGobelinController(
+export function goblin(
   fragment: Partial<ICombatantController> &
     Pick<ICombatantController, "combatant">
 ): ICombatantController {
-  return buildBaseController({
+  return base({
     attackRoll: function (this: ICombatantController): number {
       return d20() + 4;
     },
@@ -60,18 +60,4 @@ export function buildGobelinController(
     image: getImage(fragment.combatant.type),
     ...fragment,
   });
-}
-
-export function getCombatantController(
-  fragment: Partial<ICombatantController> &
-    Pick<ICombatantController, "combatant">
-) {
-  console.log(fragment.combatant.type);
-  switch (fragment.combatant.type) {
-    case "gobelin":
-      return buildGobelinController(fragment);
-
-    default:
-      return buildCharacterController(fragment);
-  }
 }

@@ -1,10 +1,10 @@
 import { consume } from "@lit/context";
 import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
-import { CombatContextObject, combatContext } from "./context";
+import { CombatContextObject, combatContext } from "../context";
 
-import "./components/dnd-start-combat";
-import "./components/dnd-turn-panel";
+import "./dnd-start-combat";
+import "./dnd-turn-panel";
 
 @customElement("dnd-menu")
 export class DndMenu extends LitElement {

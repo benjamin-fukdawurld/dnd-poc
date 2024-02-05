@@ -1,7 +1,7 @@
 import { v4 as uuid } from "uuid";
-import { Combatant } from "../../common/types";
+import { Combatant } from "../common/types";
 
-export function buildCharacter(fragment: Partial<Combatant>): Combatant {
+export function character(fragment: Partial<Combatant>): Combatant {
   const base: Combatant = {
     id: uuid(),
     type: "character",
@@ -34,7 +34,7 @@ export function buildCharacter(fragment: Partial<Combatant>): Combatant {
   };
 }
 
-export function buildGoblin(fragment?: Partial<Combatant>): Combatant {
+export function goblin(fragment?: Partial<Combatant>): Combatant {
   const rollHitPoints = () =>
     Math.floor(Math.random() * 6 + Math.random() * 6 + 2);
   const maxHitPoints = rollHitPoints();

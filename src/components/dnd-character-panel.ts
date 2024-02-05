@@ -1,9 +1,9 @@
 import { consume } from "@lit/context";
 import { LitElement, html, css, nothing } from "lit";
 import { CombatContextObject, combatContext } from "../context";
-import { AttributeNames, Combatant } from "../types";
 import { attributeBonus, formatBonus } from "../common/utils";
 import { customElement, state } from "lit/decorators.js";
+import { AttributeNames, Combatant } from "../common/types";
 
 @customElement("dnd-character-panel")
 export default class CharacterPanel extends LitElement {

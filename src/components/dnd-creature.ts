@@ -3,11 +3,12 @@ import { customElement, property } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 
 import { consume } from "@lit/context";
-import { CombatContextObject, combatContext } from "./context";
-import { Combatant, ICombatantController } from "./types";
+import { CombatContextObject, combatContext } from "../context";
+import { ICombatantController } from "../combatant/types";
 
-import shield from "./assets/images/shield.svg?raw";
-import heart from "./assets/images/heart.svg?raw";
+import shield from "../assets/images/shield.svg?raw";
+import heart from "../assets/images/heart.svg?raw";
+import { Combatant } from "../common/types";
 
 @customElement("dnd-creature")
 export class DndCreature extends LitElement {

@@ -2,17 +2,18 @@ import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { provide } from "@lit/context";
 
-import "./dnd-creature";
-import "./dnd-menu";
+import "./components/dnd-creature";
+import "./components/dnd-menu";
 
 import { CombatContextObject, combatContext } from "./context";
-import { LogSeparator } from "./common/utils";
-import { Combat, Combatant, ICombatController } from "./types";
-import CombatController from "./CombatController";
 import {
   buildCharacter,
   buildGoblin,
 } from "./components/factories/CombatantFactory";
+import Logger from "./common/Logger";
+import { Combat, Combatant } from "./common/types";
+import { ICombatController } from "./combat/types";
+import CombatController from "./combat/CombatController";
 
 @customElement("dnd-app")
 export class DndApp extends LitElement {
@@ -149,9 +150,12 @@ export class DndApp extends LitElement {
             }
           }}
           @startcombat=${() => {
-            this.controller.log(`Begin combat ${LogSeparator}`);
+            const logger = Logger.instance;
+            logger.info(`Begin combat`);
+            logger.separator();
             this.combat = this.controller.rollInitiatives(this.combat);
-            this.controller.log(`Begin round ${0} ${LogSeparator}`);
+            logger.info(`Begin round ${0}`);
+            logger.separator();
             this.combat = this.controller.beginTurn(this.combat);
           }}
           @endturn=${() => {

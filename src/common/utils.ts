@@ -12,6 +12,3 @@ export function dn(val: number) {
 }
 
 export const d20 = dn(20);
-
-export const LogSeparator = `
----------------------------------------------` as const;

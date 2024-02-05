@@ -1,38 +1,29 @@
-import { html, nothing } from "lit";
-
-import {
-  Combat,
-  CombatActionOptions,
-  Combatant,
-  CombatantAction,
-  CombatantActionName,
-  ICombatController,
-  ICombatantController,
-} from "./types";
-import { LogSeparator, attributeBonus, d20 } from "./common/utils";
+import { HTMLTemplateResult, html, nothing } from "lit";
 import { ifDefined } from "lit/directives/if-defined.js";
 
-import { getCombatantController } from "./components/factories/CombatantControllerFactory";
-import { getMenu } from "./components/factories/MenuFactory";
+import { attributeBonus, d20 } from "../common/utils";
+
+import { getCombatantController } from "../components/factories/CombatantControllerFactory";
+import { getMenu } from "../components/factories/MenuFactory";
+import Logger from "../common/Logger";
+import { ICombatController } from "./types";
+import { ICombatantController } from "../combatant/types";
+import { ActionName, Combat, Combatant } from "../common/types";
+import { CombatActionOptions, CombatantAction } from "../actions/types";
 
 export default class CombatController implements ICombatController {
-  private _logs: string[] = [];
   private _combatantControllers: Map<string, ICombatantController>;
+  public logger: Logger;
 
   public target?: Combatant;
 
   constructor() {
     this._combatantControllers = new Map();
+    this.logger = Logger.instance;
   }
 
-  get logs(): string[] {
-    return this._logs;
-  }
-
-  log(message: string): this {
-    this.logs.push(message);
-
-    return this;
+  get logs(): HTMLTemplateResult[] {
+    return Logger.logs;
   }
 
   getMenu(combat: Combat) {
@@ -58,7 +49,7 @@ export default class CombatController implements ICombatController {
   }
 
   getCombatantActionWidget(
-    action: CombatantActionName,
+    action: ActionName,
     combatant: Combatant,
     combat: Combat
   ) {
@@ -111,32 +102,34 @@ export default class CombatController implements ICombatController {
   }
 
   beginTurn(combat: Combat): Combat {
-    this.log(`Begin turn ${combat.turn} round ${combat.round} ${LogSeparator}`);
+    this.logger.info(`Begin turn ${combat.turn} round ${combat.round}`);
+    this.logger.separator();
     const combatant = this.getActiveCombatant(combat);
     if (!combatant) {
-      this.log(`Unable to pick active combatant`);
+      this.logger.info(`Unable to pick active combatant`);
       return combat;
     }
 
-    this.log(`Active combatant ${combatant.name}`);
+    this.logger.info(`Active combatant ${combatant.name}`);
     combatant.availableActions.value = combatant.availableActions.max;
     this.target = undefined;
     return combat;
   }
 
   endTurn(combat: Combat): Combat {
-    this.log(`End turn ${combat.turn} round ${combat.round} ${LogSeparator}`);
+    this.logger.info(`End turn ${combat.turn} round ${combat.round}`);
+    this.logger.separator();
     let turn = combat.turn;
     let round = combat.round;
 
     ++turn;
     if (turn >= combat.order.length) {
       turn = 0;
-      this.log(`End Round${combat.round} ${LogSeparator}`);
+      this.logger.info(`End Round${combat.round}`);
+      this.logger.separator();
       ++round;
-      this.log(
-        `Begin round ${combat.turn} round ${combat.round} ${LogSeparator}`
-      );
+      this.logger.info(`Begin round ${combat.turn} round ${combat.round}`);
+      this.logger.separator();
     }
 
     return { ...combat, turn: turn, round: round };
@@ -148,32 +141,32 @@ export default class CombatController implements ICombatController {
       return combat;
     }
 
-    this.log(`${source.name} attack ${target.name}`);
+    this.logger.info(`${source.name} attack ${target.name}`);
     const attackRoll = controller.attackRoll(combat);
     --source.availableActions.value;
 
-    this.log(`${source.name} attack roll: ${attackRoll}`);
+    this.logger.info(`${source.name} attack roll: ${attackRoll}`);
     if (attackRoll >= target.armorClass) {
       const dmg = controller.damageRoll(combat);
-      this.log(`${source.name} attack ${target.name}: Success`);
+      this.logger.info(`${source.name} attack ${target.name}: Success`);
 
       target.hitPoints.value -= dmg;
-      this.log(
+      this.logger.info(
         `${source.name} attack ${target.name}: Applies ${dmg} Damage(s)`
       );
     } else {
-      this.log(`${source.name} attack ${target.name}: Failure`);
+      this.logger.info(`${source.name} attack ${target.name}: Failure`);
     }
 
     return combat;
   }
 
   heal({ source, target, combat }: CombatActionOptions): Combat {
-    this.log(`${source.name} cast 'Cure Wounds' on ${target.name}`);
+    this.logger.info(`${source.name} cast 'Cure Wounds' on ${target.name}`);
     const value = Math.floor(
       Math.random() * 7 + 1 + attributeBonus(source.attributes.charisma)
     );
-    this.log(
+    this.logger.info(
       `${source.name} heals ${target.name}: Restores ${value} Hit Points`
     );
 
@@ -186,7 +179,8 @@ export default class CombatController implements ICombatController {
   }
 
   rollInitiatives(combat: Combat): Combat {
-    this.log(`Rolling initiatives ${LogSeparator}`);
+    this.logger.info(`Rolling initiatives`);
+    this.logger.separator();
     const order = combat.combatants
       .map((current, index): [number, Combatant, number] => {
         const roll: [number, Combatant, number] = [
@@ -194,7 +188,7 @@ export default class CombatController implements ICombatController {
           current,
           index,
         ];
-        this.log(`${roll[1].name} initiative score: ${roll[0]}`);
+        this.logger.info(`${roll[1].name} initiative score: ${roll[0]}`);
 
         return roll;
       })
@@ -203,19 +197,21 @@ export default class CombatController implements ICombatController {
         let valueB = b[0];
 
         while (valueA === valueB) {
-          this.log(`${a[1].name} and ${b[1].name} initiative scores: ${a[0]}
+          this.logger
+            .info(`${a[1].name} and ${b[1].name} initiative scores: ${a[0]}
   Reroll for ${a[1].name} and ${b[1].name}`);
           valueA = d20() + attributeBonus(a[1].attributes.dexterity);
           valueB = d20() + attributeBonus(b[1].attributes.dexterity);
-          this.log(`${a[1].name} rerolled score: ${valueA}`);
-          this.log(`${b[1].name} rerolled score: ${valueB}`);
+          this.logger.info(`${a[1].name} rerolled score: ${valueA}`);
+          this.logger.info(`${b[1].name} rerolled score: ${valueB}`);
         }
 
         return valueB - valueA;
       })
       .map((current) => current[2]);
 
-    this.log(`Initiative roll result: [${order.join(", ")}] ${LogSeparator}`);
+    this.logger.info(`Initiative roll result: [${order.join(", ")}]`);
+    this.logger.separator();
     this._combatantControllers = new Map(
       combat.combatants.map((combatant: Combatant) => [
         combatant.id,

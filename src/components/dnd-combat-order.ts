@@ -3,7 +3,7 @@ import { LitElement, html, css } from "lit";
 import { customElement } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { CombatContextObject, combatContext } from "../context";
-import { Combatant } from "../types";
+import { Combatant } from "../common/types";
 
 @customElement("dnd-combat-order")
 export default class CombatOrder extends LitElement {
