@@ -6,112 +6,59 @@ import Logger from "../common/Logger";
 import { ICombatController } from "./types";
 import { ICombatantController } from "../combatant/types";
 import { ActionName, Combat, Combatant } from "../common/types";
-import { CombatActionOptions, CombatantAction } from "../actions/types";
-import CombatantFactory from "../combatant/factories/CombatantFactory";
+import { CombatantAction } from "../actions/types";
+import { combatantFactory } from "../combatant/factories/CombatantFactory";
 import CombatFactory from "./factories/CombatFactory";
 
-const combatantFactory = CombatantFactory.instance;
 const logger = Logger.instance;
 
 export default class CombatController implements ICombatController {
-  private _combatantControllers: Map<string, ICombatantController>;
-  public target?: Combatant;
+  private _combatantControllers: ICombatantController[] = [];
 
-  constructor() {
-    this._combatantControllers = new Map();
+  isStarted(combat: Combat): boolean {
+    return combat.order.length !== 0;
   }
 
-  get logs(): HTMLTemplateResult[] {
-    return Logger.logs;
-  }
-
-  getMenu(combat: Combat) {
+  isFinished(combat: Combat): boolean {
     const alivePerGroup = combat.groups.map(
       (group) =>
-        group.filter((index) => combat.combatants[index].hitPoints.value > 0)
-          .length
+        group.filter(
+          (id) => combatantFactory.get(id)!.combatant.hitPoints.value > 0
+        ).length
     );
     const remainingGroups = alivePerGroup.filter(
       (remainingCombatant) => remainingCombatant > 0
     ).length;
 
-    switch (true) {
-      case combat.order.length === 0:
-        return CombatFactory.instance.menu("order");
-
-      case remainingGroups > 1:
-        return CombatFactory.instance.menu("turn");
-
-      default:
-        return nothing;
-    }
+    return remainingGroups <= 1;
   }
 
-  getCombatantActionWidget(
-    action: ActionName,
-    combatant: Combatant,
-    combat: Combat
-  ) {
-    return html`<div>
-      ${action}
-      <input
-        type="text"
-        readonly
-        placeholder="target"
-        value=${ifDefined(this.target?.name)}
-      />
-      <button
-        ?disabled=${!combatant.availableActions.value || !this.target}
-        @click=${(e: Event) => {
-          e.stopPropagation();
-          e.target!.dispatchEvent(
-            new CustomEvent<CombatantAction>("combatantaction", {
-              bubbles: true,
-              composed: true,
-              detail: {
-                action: action,
-                source: combatant,
-                combat: combat,
-                target: this.target!,
-              },
-            })
-          );
-        }}
-      >
-        use
-      </button>
-    </div>`;
-  }
+  start(combat: Combat): Combat {
+    logger.info("Begin combat");
+    this._combatantControllers = combat.groups
+      .flat()
+      .map(
+        (combatant: string): ICombatantController =>
+          combatantFactory.get(combatant)!
+      );
 
-  getActiveCombatant(combat: Combat): Combatant | undefined {
-    if (
-      combat.combatants.length === 0 ||
-      combat.order.length === 0 ||
-      combat.turn < 0 ||
-      combat.turn >= combat.order.length
-    ) {
-      return;
-    }
+    logger.separator();
 
-    return combat.combatants[combat.order[combat.turn]];
-  }
-
-  getCombatantController(id: string): ICombatantController | undefined {
-    return this._combatantControllers.get(id);
+    return combat;
   }
 
   beginTurn(combat: Combat): Combat {
     logger.info(`Begin turn ${combat.turn} round ${combat.round}`);
     logger.separator();
-    const combatant = this.getActiveCombatant(combat);
-    if (!combatant) {
+    const controller = this.getActiveCombatant(combat);
+    if (!controller) {
       logger.info(`Unable to pick active combatant`);
       return combat;
     }
 
-    logger.info(`Active combatant ${combatant.name}`);
-    combatant.availableActions.value = combatant.availableActions.max;
-    this.target = undefined;
+    logger.info(`Active combatant ${controller.combatant.name}`);
+    controller.combatant.availableActions.value =
+      controller.combatant.availableActions.max;
     return combat;
   }
 
@@ -134,95 +81,118 @@ export default class CombatController implements ICombatController {
     return { ...combat, turn: turn, round: round };
   }
 
-  attack({ source, target, combat }: CombatActionOptions): Combat {
-    const controller = this.getCombatantController(source.id);
-    if (!controller) {
-      return combat;
-    }
-
-    logger.info(`${source.name} attack ${target.name}`);
-    const attackRoll = controller.attackRoll(combat);
-    --source.availableActions.value;
-
-    logger.info(`${source.name} attack roll: ${attackRoll}`);
-    if (attackRoll >= target.armorClass) {
-      const dmg = controller.damageRoll(combat);
-      logger.info(`${source.name} attack ${target.name}: Success`);
-
-      target.hitPoints.value -= dmg;
-      logger.info(
-        `${source.name} attack ${target.name}: Applies ${dmg} Damage(s)`
-      );
-    } else {
-      logger.info(`${source.name} attack ${target.name}: Failure`);
-    }
-
-    return combat;
-  }
-
-  heal({ source, target, combat }: CombatActionOptions): Combat {
-    logger.info(`${source.name} cast 'Cure Wounds' on ${target.name}`);
-    const value = Math.floor(
-      Math.random() * 7 + 1 + attributeBonus(source.attributes.charisma)
-    );
-    logger.info(
-      `${source.name} heals ${target.name}: Restores ${value} Hit Points`
-    );
-
-    target.hitPoints.value = Math.min(
-      target.hitPoints.value + value,
-      target.hitPoints.max
-    );
-    --target.availableActions.value;
-    return combat;
-  }
-
   rollInitiatives(combat: Combat): Combat {
     logger.info(`Rolling initiatives`);
     logger.separator();
-    const order = combat.combatants
-      .map((current, index): [number, Combatant, number] => {
-        const roll: [number, Combatant, number] = [
-          d20() + attributeBonus(current.attributes.dexterity),
-          current,
-          index,
-        ];
-        logger.info(`${roll[1].name} initiative score: ${roll[0]}`);
 
-        return roll;
-      })
-      .sort((a, b) => {
-        let valueA = a[0];
-        let valueB = b[0];
+    const rolls = this._combatantControllers.map((controller, index) => {
+      const roll = controller.initiativeRoll(combat);
+      logger.info(`${controller.combatant.name} initiative score: ${roll}`);
 
-        while (valueA === valueB) {
-          logger.info(`${a[1].name} and ${b[1].name} initiative scores: ${a[0]}
-  Reroll for ${a[1].name} and ${b[1].name}`);
-          valueA = d20() + attributeBonus(a[1].attributes.dexterity);
-          valueB = d20() + attributeBonus(b[1].attributes.dexterity);
-          logger.info(`${a[1].name} rerolled score: ${valueA}`);
-          logger.info(`${b[1].name} rerolled score: ${valueB}`);
-        }
+      return {
+        roll: controller.initiativeRoll(combat),
+        controller,
+        index,
+      };
+    });
 
-        return valueB - valueA;
-      })
-      .map((current) => current[2]);
+    rolls.sort((a, b) => {
+      let valueA = a.roll;
+      let valueB = b.roll;
+
+      while (valueA === valueB) {
+        logger.info(`${a.controller.combatant.name} and ${b.controller.combatant.name} initiative scores: ${a.roll}
+  Reroll for ${a.controller.combatant.name} and ${b.controller.combatant.name}`);
+        valueA =
+          d20() + attributeBonus(a.controller.combatant.attributes.dexterity);
+        valueB =
+          d20() + attributeBonus(b.controller.combatant.attributes.dexterity);
+        logger.info(`${a.controller.combatant.name} rerolled score: ${valueA}`);
+        logger.info(`${b.controller.combatant.name} rerolled score: ${valueB}`);
+      }
+
+      return valueB - valueA;
+    });
+
+    const order = rolls.map((roll) => roll.index);
 
     logger.info(`Initiative roll result: [${order.join(", ")}]`);
     logger.separator();
-    console.log(
-      combatantFactory.buildController("character", {
-        combatant: combat.combatants[0],
-      })
-    );
-    this._combatantControllers = new Map(
-      combat.combatants.map((combatant: Combatant) => [
-        combatant.id,
-        combatantFactory.buildController(combatant.type, { combatant })!,
-      ])
-    );
     combat = { ...combat, order, round: 0, turn: 0 };
 
     return combat;
+  }
+
+  end(combat: Combat): Combat {
+    logger.info("End combat");
+    logger.separator();
+    return combat;
+  }
+
+  get logs(): HTMLTemplateResult[] {
+    return Logger.logs;
+  }
+
+  get combatantControllers(): ICombatantController[] {
+    return this._combatantControllers;
+  }
+
+  getMenu(combat: Combat) {
+    if (!this.isStarted(combat)) {
+      return CombatFactory.instance.menu("order");
+    }
+
+    if (!this.isFinished(combat)) {
+      return CombatFactory.instance.menu("turn");
+    }
+
+    return nothing;
+  }
+
+  getCombatantActionWidget(
+    action: ActionName,
+    combatant: Combatant,
+    combat: Combat
+  ) {
+    const controller = this.getActiveCombatant(combat);
+    const target = controller?.target;
+
+    return html`<div>
+      ${action}
+      <input
+        type="text"
+        readonly
+        placeholder="target"
+        value=${ifDefined(target?.name)}
+      />
+      <button
+        ?disabled=${!combatant.availableActions.value || !target}
+        @click=${(e: Event) => {
+          e.stopPropagation();
+          e.target!.dispatchEvent(
+            new CustomEvent<CombatantAction>("combatantaction", {
+              bubbles: true,
+              composed: true,
+              detail: {
+                action: action,
+                source: combatantFactory.get(combatant.id)!,
+                combat: combat,
+                target: combatantFactory.get(target!.id)!,
+              },
+            })
+          );
+        }}
+      >
+        use
+      </button>
+    </div>`;
+  }
+
+  getActiveCombatant(combat: Combat): ICombatantController | undefined {
+    if (!this.isStarted(combat) || combat.turn >= combat.order.length) {
+      return;
+    }
+
+    return this._combatantControllers[combat.order[combat.turn]];
   }
 }

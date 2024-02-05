@@ -1,19 +1,12 @@
-import { ActionName, Combat, Combatant } from "../common/types";
-
-export type CombatActionOptions = {
-  source: Combatant;
-  target: Combatant;
-  combat: Combat;
-};
-
-export type CombatAction = (options: CombatActionOptions) => Combat;
+import { ICombatantController } from "../combatant/types";
+import { ActionName, Combat } from "../common/types";
 
 export type CombatantActionBase = {
-  source: Combatant;
+  source: ICombatantController;
   combat: Combat;
 };
 
 export type CombatantAction = CombatantActionBase & {
   action: ActionName;
-  target: Combatant;
+  target: ICombatantController;
 };

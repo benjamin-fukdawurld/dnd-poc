@@ -1,10 +1,18 @@
 import { HTMLTemplateResult, nothing } from "lit";
 import { ActionName, Combat, Combatant } from "../common/types";
 import { ICombatantController } from "../combatant/types";
-import { CombatAction } from "../actions/types";
 
 export interface ICombatController {
-  target?: Combatant;
+  isStarted(combat: Combat): boolean;
+  isFinished(combat: Combat): boolean;
+
+  start(combat: Combat): Combat;
+  rollInitiatives: (combat: Combat) => Combat;
+  beginTurn: (combat: Combat) => Combat;
+  endTurn: (combat: Combat) => Combat;
+  end(combat: Combat): Combat;
+
+  combatantControllers: ICombatantController[];
 
   logs: HTMLTemplateResult[];
 
@@ -15,13 +23,5 @@ export interface ICombatController {
     combat: Combat
   ): HTMLTemplateResult | typeof nothing;
 
-  getActiveCombatant: (combat: Combat) => Combatant | undefined;
-  getCombatantController: (id: string) => ICombatantController | undefined;
-
-  rollInitiatives: (combat: Combat) => Combat;
-  beginTurn: (combat: Combat) => Combat;
-  endTurn: (combat: Combat) => Combat;
-
-  attack: CombatAction;
-  heal: CombatAction;
+  getActiveCombatant: (combat: Combat) => ICombatantController | undefined;
 }

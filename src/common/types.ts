@@ -39,8 +39,7 @@ export interface Combatant {
 }
 
 export type Combat = {
-  combatants: Combatant[];
-  groups: number[][];
+  groups: string[][];
   order: number[];
   round: number;
   turn: number;

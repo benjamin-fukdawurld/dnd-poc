@@ -3,7 +3,8 @@ import { LitElement, html, css, nothing } from "lit";
 import { CombatContextObject, combatContext } from "../context";
 import { attributeBonus, formatBonus } from "../common/utils";
 import { customElement, state } from "lit/decorators.js";
-import { AttributeNames, Combatant } from "../common/types";
+import { AttributeNames } from "../common/types";
+import { ICombatantController } from "../combatant/types";
 
 @customElement("dnd-character-panel")
 export default class CharacterPanel extends LitElement {
@@ -77,15 +78,16 @@ export default class CharacterPanel extends LitElement {
     this.currentTab = "actions";
   }
 
-  get combatant(): Combatant | undefined {
+  get controller(): ICombatantController | undefined {
     return this.context.controller.getActiveCombatant(this.context.combat);
   }
 
   get currentContent() {
-    const combatant = this.combatant;
-    if (!combatant) {
+    const controller = this.controller;
+    if (!controller) {
       return nothing;
     }
+    const { combatant } = controller;
 
     switch (this.currentTab) {
       case "info":

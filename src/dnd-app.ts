@@ -11,9 +11,38 @@ import Logger from "./common/Logger";
 import { Combat, Combatant } from "./common/types";
 import { ICombatController } from "./combat/types";
 import CombatController from "./combat/CombatController";
-import CombatantFactory from "./combatant/factories/CombatantFactory";
+import { combatantFactory } from "./combatant/factories/CombatantFactory";
+import { CombatantAction } from "./actions/types";
 
-const combatantFactory = CombatantFactory.instance;
+const characters = [
+  combatantFactory.create("character", "character", {
+    combatant: {
+      name: "Paluche",
+      type: "character",
+      imageId: "paladin",
+    },
+  })!,
+  combatantFactory.create("character", "character", {
+    combatant: {
+      name: "Robert",
+      type: "character",
+      imageId: "rogue",
+    },
+  })!,
+  combatantFactory.create("goblin", "goblin", {
+    combatant: {
+      name: "Goblin",
+    },
+  })!,
+  combatantFactory.create("goblin", "goblin", {
+    combatant: {
+      name: "Goblin",
+      imageId: "goblin2",
+    },
+  })!,
+];
+
+characters.map((ctrl) => combatantFactory.add(ctrl));
 
 @customElement("dnd-app")
 export class DndApp extends LitElement {
@@ -51,27 +80,8 @@ export class DndApp extends LitElement {
     controller: new CombatController(),
     combat: {
       groups: [
-        [0, 1],
-        [2, 3],
-      ],
-      combatants: [
-        combatantFactory.build("character", {
-          name: "Paluche",
-          type: "character",
-          imageId: "paladin",
-        })!,
-        combatantFactory.build("character", {
-          name: "Robert",
-          type: "character",
-          imageId: "rogue",
-        })!,
-        combatantFactory.build("goblin", {
-          name: "Goblin",
-        })!,
-        combatantFactory.build("goblin", {
-          name: "Goblin",
-          imageId: "goblin2",
-        })!,
+        [characters[0].combatant.id, characters[1].combatant.id],
+        [characters[2].combatant.id, characters[3].combatant.id],
       ],
       order: [],
       turn: Number.NaN,
@@ -95,6 +105,16 @@ export class DndApp extends LitElement {
     this.context = { ...this.context, controller };
   }
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.combat = this.controller.start(this.combat);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.combat = this.controller.end(this.combat);
+  }
+
   render() {
     return html`
       <div class="app">
@@ -102,10 +122,15 @@ export class DndApp extends LitElement {
         <main
           @combatantselected=${(e: CustomEvent<Combatant>) => {
             const selected = e.detail;
-            if (selected === this.controller.target) {
-              this.controller.target = undefined;
+            const controller = this.controller.getActiveCombatant(this.combat);
+            if (!controller) {
+              return;
+            }
+
+            if (selected === controller.target) {
+              controller.target = undefined;
             } else {
-              this.controller.target = selected;
+              controller.target = selected;
             }
 
             this.controller = this.controller;
@@ -113,11 +138,11 @@ export class DndApp extends LitElement {
         >
           ${this.combat.groups.map((group, group_index) => {
             const combatants = group
-              .map((index) => this.combat.combatants[index])
+              .map((id) => combatantFactory.get(id))
               .map(
-                (combatant) => html`
+                (controller) => html`
                   <dnd-combatant-card
-                    creatureId=${combatant.id}
+                    creatureId=${controller!.combatant.id}
                     ?noinfo=${group_index !== 0}
                   ></dnd-combatant-card>
                 `
@@ -128,35 +153,13 @@ export class DndApp extends LitElement {
         </main>
         <dnd-menu
           class="menu"
-          @combatantaction=${(
-            event: CustomEvent<{
-              action: string;
-              source: Combatant;
-              target: Combatant;
-            }>
-          ) => {
-            const { action, source, target } = event.detail;
-            switch (action) {
-              case "attack":
-                this.combat = this.controller.attack({
-                  source,
-                  target,
-                  combat: this.combat,
-                });
-                break;
-              case "cure wounds":
-                this.combat = this.controller.heal({
-                  source,
-                  target,
-                  combat: this.combat,
-                });
-                break;
-            }
+          @combatantaction=${({
+            detail: action,
+          }: CustomEvent<CombatantAction>) => {
+            this.combat = action.source.handleAction(action);
           }}
           @startcombat=${() => {
             const logger = Logger.instance;
-            logger.info(`Begin combat`);
-            logger.separator();
             this.combat = this.controller.rollInitiatives(this.combat);
             logger.info(`Begin round ${0}`);
             logger.separator();

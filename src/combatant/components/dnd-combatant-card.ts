@@ -11,6 +11,7 @@ import { Combatant } from "../../common/types";
 import shield from "../../assets/images/shield.svg?raw";
 import heart from "../../assets/images/heart.svg?raw";
 import { getImage } from "../../common/ImageFactory";
+import { combatantFactory } from "../factories/CombatantFactory";
 
 @customElement("dnd-combatant-card")
 export class DndCombatantCard extends LitElement {
@@ -133,36 +134,66 @@ export class DndCombatantCard extends LitElement {
         order?: number;
       }
     | undefined {
-    const index = this.context.combat.combatants.findIndex(
-      (current) => current.id === this.creatureId
-    );
+    const result = combatantFactory.get(this.creatureId);
+    const order = this.context.combat.order.findIndex((index) => {
+      return this.context.controller.combatantControllers[index] === result;
+    });
 
-    if (index === -1) {
-      return;
-    }
-
-    const combatant = this.context.combat.combatants[index];
-    const controller = this.context.controller.getCombatantController(
-      combatant.id
-    );
-    const order = this.context.combat.order?.findIndex((val) => val === index);
-
-    return { combatant, controller, order: order < 0 ? undefined : order };
+    return result
+      ? {
+          combatant: result.combatant,
+          controller: result,
+          order: order < 0 ? undefined : order,
+        }
+      : undefined;
   }
 
   get combatantController(): ICombatantController | undefined {
-    return this.context.controller.getCombatantController(this.creatureId);
+    return combatantFactory.get(this.creatureId);
   }
 
   isActive(combatant: Combatant): boolean {
-    return (
-      this.context.controller.getActiveCombatant(this.context.combat) ===
-      combatant
+    const ctrl = this.context.controller.getActiveCombatant(
+      this.context.combat
     );
+    if (!ctrl) {
+      return false;
+    }
+
+    return ctrl.combatant === combatant;
   }
 
   hasRemainingActions(combatant: Combatant): boolean {
     return combatant.availableActions.value > 0;
+  }
+
+  healthPercentage(combatant: Combatant): number {
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        Math.floor((combatant.hitPoints.value / combatant.hitPoints.max) * 100)
+      )
+    );
+  }
+
+  healthBarColor(val: number): string {
+    switch (true) {
+      case val < 10:
+        return "red";
+
+      case val < 25:
+        return "orangered";
+
+      case val < 50:
+        return "gold";
+
+      case val < 75:
+        return "yellowgreen";
+
+      default:
+        return "green";
+    }
   }
 
   render() {
@@ -172,35 +203,17 @@ export class DndCombatantCard extends LitElement {
     }
     const { combatant, order } = controls;
 
-    const isActive = this.isActive(combatant);
-    const isTarget = this.context.controller.target === combatant;
-
-    const health = Math.max(
-      0,
-      Math.min(
-        100,
-        Math.floor((combatant.hitPoints.value / combatant.hitPoints.max) * 100)
-      )
+    const activeCombatant = this.context.controller.getActiveCombatant(
+      this.context.combat
     );
+    const isActive =
+      activeCombatant !== undefined && activeCombatant === controls.controller;
+    const isTarget =
+      activeCombatant !== undefined && activeCombatant.target === combatant;
 
-    let healthbarColor = "green";
-    switch (true) {
-      case health < 10:
-        healthbarColor = "red";
-        break;
+    const health = this.healthPercentage(combatant);
 
-      case health < 25:
-        healthbarColor = "orangered";
-        break;
-
-      case health < 50:
-        healthbarColor = "gold";
-        break;
-
-      case health < 75:
-        healthbarColor = "yellowgreen";
-        break;
-    }
+    let healthbarColor = this.healthBarColor(health);
 
     return html` <article
       class=${`${isActive ? "active" : ""} ${isTarget ? "target" : ""}`}

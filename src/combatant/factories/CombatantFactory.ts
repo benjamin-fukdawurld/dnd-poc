@@ -8,50 +8,26 @@ import * as controllerBuilders from "./controllerBuilders";
 import { Combatant } from "../../common/types";
 
 export default class CombatantFactory {
-  private _builders: Map<string, CombatantBuilder>;
-  private _controllerBuilders: Map<string, CombatantControllerBuilder>;
+  public builders: Map<string, CombatantBuilder>;
+  public controllerBuilders: Map<string, CombatantControllerBuilder>;
 
-  private static _instance?: CombatantFactory;
+  public combatants: Map<string, ICombatantController>;
 
   constructor() {
-    this._builders = new Map<string, CombatantBuilder>(
-      Object.entries(builders)
-    );
-    this._controllerBuilders = new Map<string, CombatantControllerBuilder>(
+    this.builders = new Map<string, CombatantBuilder>(Object.entries(builders));
+    this.controllerBuilders = new Map<string, CombatantControllerBuilder>(
       Object.entries(controllerBuilders)
     );
-  }
 
-  static get instance(): CombatantFactory {
-    if (!CombatantFactory._instance) {
-      CombatantFactory._instance = new CombatantFactory();
-    }
-
-    return CombatantFactory._instance;
-  }
-
-  static get builders(): Map<string, CombatantBuilder> {
-    return CombatantFactory.instance._builders;
-  }
-
-  static set builders(val: Map<string, CombatantBuilder>) {
-    CombatantFactory.instance._builders = val;
-  }
-
-  static set controllerBuilders(val: Map<string, CombatantControllerBuilder>) {
-    CombatantFactory.instance._controllerBuilders = val;
-  }
-
-  static get controllerBuilders(): Map<string, CombatantControllerBuilder> {
-    return CombatantFactory.instance._controllerBuilders;
+    this.combatants = new Map<string, ICombatantController>();
   }
 
   getBuilder(type: string): CombatantBuilder | undefined {
-    return this._builders.get(type);
+    return this.builders.get(type);
   }
 
   getControllerBuilder(type: string): CombatantControllerBuilder | undefined {
-    return this._controllerBuilders.get(type);
+    return this.controllerBuilders.get(type);
   }
 
   build(type: string, fragment: Partial<Combatant>): Combatant | undefined {
@@ -67,4 +43,34 @@ export default class CombatantFactory {
     const g = this.getControllerBuilder(type);
     return g ? g(fragment) : undefined;
   }
+
+  add(controller: ICombatantController): ICombatantController {
+    this.combatants.set(controller.combatant.id, controller);
+    return controller;
+  }
+
+  remove(id: string): boolean {
+    return this.combatants.delete(id);
+  }
+
+  get(id: string): ICombatantController | undefined {
+    return this.combatants.get(id);
+  }
+
+  create(
+    builder: string,
+    controller: string,
+    fragment: { combatant: Partial<Combatant> } & Partial<
+      Omit<ICombatantController, "combatant">
+    >
+  ): ICombatantController | undefined {
+    const combatant = this.build(builder, fragment.combatant);
+    if (!combatant) {
+      return;
+    }
+
+    return this.buildController(controller, { ...fragment, combatant });
+  }
 }
+
+export const combatantFactory = new CombatantFactory();
