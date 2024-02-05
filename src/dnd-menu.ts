@@ -46,11 +46,7 @@ export class DndMenu extends LitElement {
       <div class="logs">
         ${this.context.controller.logs.map((msg) => html`<pre>${msg}</pre>`)}
       </div>
-      <nav>
-        ${!this.context.combat.order.length
-          ? html`<dnd-start-combat></dnd-start-combat>`
-          : html`<dnd-turn-panel></dnd-turn-panel>`}
-      </nav>
+      <nav>${this.context.controller.getMenu(this.context.combat)}</nav>
     </div>`;
   }
 }

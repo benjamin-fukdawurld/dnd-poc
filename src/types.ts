@@ -20,10 +20,11 @@ export type Range = {
 
 export interface Combatant {
   id: string;
+  type: string;
   name: string;
-  healthPoints: Range;
+  hitPoints: Range;
   armorClass: number;
-  actions: string[];
+  actions: CombatantActionName[];
   attackRoll: (combatant: Combatant) => number;
   damageRoll: (combatant: Combatant) => number;
   attributes: CreatureAttributes;
@@ -46,6 +47,20 @@ export type CombatActionOptions = {
 
 export type CombatAction = (options: CombatActionOptions) => Combat;
 
+export interface ICombatantController {
+  combatant: Combatant;
+  target?: Combatant;
+
+  image: HTMLTemplateResult | typeof nothing;
+
+  beginTurn: (combat: Combat) => Combat;
+  endTurn: (combat: Combat) => Combat;
+
+  initiativeRoll: (combat: Combat) => number;
+  attackRoll: (combat: Combat) => number;
+  damageRoll: (combat: Combat) => number;
+}
+
 export interface ICombatController {
   logs: string[];
   target?: Combatant;
@@ -53,8 +68,14 @@ export interface ICombatController {
   log(message: string): ICombatController;
 
   getMenu(combat: Combat): HTMLTemplateResult | typeof nothing;
+  getCombatantActionWidget(
+    action: CombatantActionName,
+    combatant: Combatant,
+    combat: Combat
+  ): HTMLTemplateResult | typeof nothing;
 
   getActiveCombatant: (combat: Combat) => Combatant | undefined;
+  getCombatantController: (id: string) => ICombatantController | undefined;
 
   rollInitiatives: (combat: Combat) => Combat;
   beginTurn: (combat: Combat) => Combat;
@@ -63,24 +84,14 @@ export interface ICombatController {
   heal: CombatAction;
 }
 
-export type CombatantActionEventDetailBase = {
+export type CombatantActionBase = {
   source: Combatant;
+  combat: Combat;
 };
 
-export type CombatantActionEventDetail = CombatantActionEventDetailBase &
-  (
-    | {
-        action: "attack";
-        target: Combatant;
-      }
-    | {
-        action: "cure wounds";
-        target: Combatant;
-      }
-    | {
-        action: "fireball";
-        position: { x: number; y: number };
-      }
-  );
+export type CombatantAction = CombatantActionBase & {
+  action: "attack" | "cure wounds";
+  target: Combatant;
+};
 
-export type CombatantActionEvent = CustomEvent<CombatantActionEventDetail>;
+export type CombatantActionName = CombatantAction["action"];

@@ -4,14 +4,26 @@ import {
   Combat,
   CombatActionOptions,
   Combatant,
+  CombatantAction,
+  CombatantActionName,
   ICombatController,
+  ICombatantController,
 } from "./types";
 import { LogSeparator, attributeBonus, d20 } from "./utils";
+import { ifDefined } from "lit/directives/if-defined.js";
+
+import { getCombatantController } from "./components/factories/CombatantControllerFactory";
+import { getMenu } from "./components/factories/MenuFactory";
 
 export default class CombatController implements ICombatController {
   private _logs: string[] = [];
+  private _combatantControllers: Map<string, ICombatantController>;
 
   public target?: Combatant;
+
+  constructor() {
+    this._combatantControllers = new Map();
+  }
 
   get logs(): string[] {
     return this._logs;
@@ -24,11 +36,61 @@ export default class CombatController implements ICombatController {
   }
 
   getMenu(combat: Combat) {
-    if (combat.order.length === 0) {
-      return html`<dnd-start-combat></dnd-start-combat>`;
-    }
+    const alivePerGroup = combat.groups.map(
+      (group) =>
+        group.filter((index) => combat.combatants[index].hitPoints.value > 0)
+          .length
+    );
+    const remainingGroups = alivePerGroup.filter(
+      (remainingCombatant) => remainingCombatant > 0
+    ).length;
 
-    return nothing;
+    switch (true) {
+      case combat.order.length === 0:
+        return getMenu("order");
+
+      case remainingGroups > 1:
+        return getMenu("turns");
+
+      default:
+        return nothing;
+    }
+  }
+
+  getCombatantActionWidget(
+    action: CombatantActionName,
+    combatant: Combatant,
+    combat: Combat
+  ) {
+    return html`<div>
+      ${action}
+      <input
+        type="text"
+        readonly
+        placeholder="target"
+        value=${ifDefined(this.target?.name)}
+      />
+      <button
+        ?disabled=${!combatant.availableActions.value || !this.target}
+        @click=${(e: Event) => {
+          e.stopPropagation();
+          e.target!.dispatchEvent(
+            new CustomEvent<CombatantAction>("combatantaction", {
+              bubbles: true,
+              composed: true,
+              detail: {
+                action: action,
+                source: combatant,
+                combat: combat,
+                target: this.target!,
+              },
+            })
+          );
+        }}
+      >
+        use
+      </button>
+    </div>`;
   }
 
   getActiveCombatant(combat: Combat): Combatant | undefined {
@@ -42,6 +104,10 @@ export default class CombatController implements ICombatController {
     }
 
     return combat.combatants[combat.order[combat.turn]];
+  }
+
+  getCombatantController(id: string): ICombatantController | undefined {
+    return this._combatantControllers.get(id);
   }
 
   beginTurn(combat: Combat): Combat {
@@ -77,15 +143,21 @@ export default class CombatController implements ICombatController {
   }
 
   attack({ source, target, combat }: CombatActionOptions): Combat {
-    const attackRoll = source.attackRoll(source);
+    const controller = this.getCombatantController(source.id);
+    if (!controller) {
+      return combat;
+    }
+
+    this.log(`${source.name} attack ${target.name}`);
+    const attackRoll = controller.attackRoll(combat);
     --source.availableActions.value;
 
     this.log(`${source.name} attack roll: ${attackRoll}`);
     if (attackRoll >= target.armorClass) {
-      const dmg = source.damageRoll(source);
+      const dmg = controller.damageRoll(combat);
       this.log(`${source.name} attack ${target.name}: Success`);
 
-      target.healthPoints.value -= dmg;
+      target.hitPoints.value -= dmg;
       this.log(
         `${source.name} attack ${target.name}: Applies ${dmg} Damage(s)`
       );
@@ -105,7 +177,10 @@ export default class CombatController implements ICombatController {
       `${source.name} heals ${target.name}: Restores ${value} Hit Points`
     );
 
-    target.healthPoints.value += value;
+    target.hitPoints.value = Math.min(
+      target.hitPoints.value + value,
+      target.hitPoints.max
+    );
     --target.availableActions.value;
     return combat;
   }
@@ -141,6 +216,12 @@ export default class CombatController implements ICombatController {
       .map((current) => current[2]);
 
     this.log(`Initiative roll result: [${order.join(", ")}] ${LogSeparator}`);
+    this._combatantControllers = new Map(
+      combat.combatants.map((combatant: Combatant) => [
+        combatant.id,
+        getCombatantController({ combatant }),
+      ])
+    );
     combat = { ...combat, order, round: 0, turn: 0 };
 
     return combat;

@@ -9,7 +9,10 @@ import { CombatContextObject, combatContext } from "./context";
 import { LogSeparator } from "./utils";
 import { Combat, Combatant, ICombatController } from "./types";
 import CombatController from "./CombatController";
-import { buildCharacter, buildGoblin } from "./builders";
+import {
+  buildCharacter,
+  buildGoblin,
+} from "./components/factories/CombatantFactory";
 
 @customElement("dnd-app")
 export class DndApp extends LitElement {
@@ -52,10 +55,12 @@ export class DndApp extends LitElement {
       ],
       combatants: [
         buildCharacter({
-          name: "Character",
+          name: "Paluche",
+          type: "paladin",
         }),
         buildCharacter({
-          name: "Character2",
+          name: "Robert",
+          type: "rogue",
         }),
         buildGoblin({
           name: "Goblin",
@@ -101,12 +106,15 @@ export class DndApp extends LitElement {
             this.controller = this.controller;
           }}
         >
-          ${this.combat.groups.map((group) => {
+          ${this.combat.groups.map((group, group_index) => {
             const combatants = group
               .map((index) => this.combat.combatants[index])
               .map(
                 (combatant) => html`
-                  <dnd-creature creatureName=${combatant.name}></dnd-creature>
+                  <dnd-creature
+                    creatureId=${combatant.id}
+                    ?noinfo=${group_index !== 0}
+                  ></dnd-creature>
                 `
               );
 

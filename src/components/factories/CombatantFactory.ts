@@ -1,13 +1,14 @@
-import { Combatant } from "./types";
-import { attributeBonus, d20 } from "./utils";
+import { Combatant } from "../../types";
+import { attributeBonus, d20 } from "../../utils";
 import { v4 as uuid } from "uuid";
 
 export function buildCharacter(fragment: Partial<Combatant>): Combatant {
   const base: Combatant = {
     id: uuid(),
+    type: "character",
     name: "Character",
     actions: ["attack", "cure wounds"],
-    healthPoints: {
+    hitPoints: {
       min: 0,
       max: 50,
       value: 50,
@@ -45,9 +46,10 @@ export function buildGoblin(fragment?: Partial<Combatant>): Combatant {
   const maxHitPoints = rollHitPoints();
   const base: Combatant = {
     id: uuid(),
-    name: "Gobelin",
+    type: "goblin",
+    name: "Goblin",
     actions: ["attack"],
-    healthPoints: {
+    hitPoints: {
       min: 0,
       max: maxHitPoints,
       value: maxHitPoints,

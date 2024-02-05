@@ -4,7 +4,6 @@ import { CombatContextObject, combatContext } from "../context";
 import { AttributeNames, Combatant } from "../types";
 import { attributeBonus, formatBonus } from "../utils";
 import { customElement, state } from "lit/decorators.js";
-import { ifDefined } from "lit/directives/if-defined.js";
 
 @customElement("dnd-character-panel")
 export default class CharacterPanel extends LitElement {
@@ -16,14 +15,9 @@ export default class CharacterPanel extends LitElement {
         height: 100%;
       }
 
-      h5,
-      ul {
+      h5 {
         margin: 0;
         padding: 0;
-      }
-
-      ul {
-        list-style: none;
       }
 
       .tabs button {
@@ -87,10 +81,6 @@ export default class CharacterPanel extends LitElement {
     return this.context.controller.getActiveCombatant(this.context.combat);
   }
 
-  hasRemainingActions(combatant: Combatant): boolean {
-    return combatant.availableActions.value > 0;
-  }
-
   get currentContent() {
     const combatant = this.combatant;
     if (!combatant) {
@@ -113,48 +103,19 @@ export default class CharacterPanel extends LitElement {
             })}
           </ul>`;
       case "actions": {
-        const hasRemainingActions = this.hasRemainingActions(combatant);
         return html`<h5>Actions</h5>
           <div>
             remaining:
-            ${combatant.availableActions.value}/${combatant.availableActions
-              .max}
+            ${combatant.availableActions.value}/${
+          combatant.availableActions.max
+        }
           </div>
-          <ul>
-            ${combatant.actions.map(
-              (current) => html`<li>
-                ${current}
-                <input
-                  type="text"
-                  readonly
-                  placeholder="target"
-                  value=${ifDefined(this.context.controller.target?.name)}
-                />
-                <button
-                  ?disabled=${!hasRemainingActions ||
-                  !this.context.controller.target}
-                  @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this.dispatchEvent(
-                      new CustomEvent<{
-                        action: string;
-                        source: Combatant;
-                        target: Combatant;
-                      }>("combatantaction", {
-                        bubbles: true,
-                        composed: true,
-                        detail: {
-                          action: current,
-                          source: combatant,
-                          target: this.context.controller.target!,
-                        },
-                      })
-                    );
-                  }}
-                >
-                  use
-                </button>
-              </li>`
+            ${combatant.actions.map((current) =>
+              this.context.controller.getCombatantActionWidget(
+                current,
+                combatant,
+                this.context.combat
+              )
             )}
           </ul>`;
       }

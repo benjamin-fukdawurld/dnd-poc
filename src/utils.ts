@@ -7,9 +7,11 @@ export function formatBonus(val: number): string {
   return val === 0 ? "" : `${plus}${val}`;
 }
 
-export function d20(): number {
-  return Math.floor(Math.random() * 19 + 1);
+export function dn(val: number) {
+  return () => Math.floor(Math.random() * (val - 1) + 1);
 }
+
+export const d20 = dn(20);
 
 export const LogSeparator = `
 ---------------------------------------------` as const;
