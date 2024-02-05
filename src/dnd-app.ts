@@ -2,18 +2,18 @@ import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { provide } from "@lit/context";
 
-import "./components/dnd-creature";
+import "./combatant/components/dnd-combatant-card";
+import "./combat/components/dnd-combat-header";
 import "./components/dnd-menu";
 
 import { CombatContextObject, combatContext } from "./context";
-import {
-  buildCharacter,
-  buildGoblin,
-} from "./components/factories/CombatantFactory";
 import Logger from "./common/Logger";
 import { Combat, Combatant } from "./common/types";
 import { ICombatController } from "./combat/types";
 import CombatController from "./combat/CombatController";
+import CombatantFactory from "./combatant/factories/CombatantFactory";
+
+const combatantFactory = CombatantFactory.instance;
 
 @customElement("dnd-app")
 export class DndApp extends LitElement {
@@ -55,20 +55,23 @@ export class DndApp extends LitElement {
         [2, 3],
       ],
       combatants: [
-        buildCharacter({
+        combatantFactory.build("character", {
           name: "Paluche",
-          type: "paladin",
-        }),
-        buildCharacter({
+          type: "character",
+          imageId: "paladin",
+        })!,
+        combatantFactory.build("character", {
           name: "Robert",
-          type: "rogue",
-        }),
-        buildGoblin({
+          type: "character",
+          imageId: "rogue",
+        })!,
+        combatantFactory.build("goblin", {
           name: "Goblin",
-        }),
-        buildGoblin({
-          name: "Goblin2",
-        }),
+        })!,
+        combatantFactory.build("goblin", {
+          name: "Goblin",
+          imageId: "goblin2",
+        })!,
       ],
       order: [],
       turn: Number.NaN,
@@ -95,6 +98,7 @@ export class DndApp extends LitElement {
   render() {
     return html`
       <div class="app">
+        <dnd-combat-header></dnd-combat-header>
         <main
           @combatantselected=${(e: CustomEvent<Combatant>) => {
             const selected = e.detail;
@@ -112,10 +116,10 @@ export class DndApp extends LitElement {
               .map((index) => this.combat.combatants[index])
               .map(
                 (combatant) => html`
-                  <dnd-creature
+                  <dnd-combatant-card
                     creatureId=${combatant.id}
                     ?noinfo=${group_index !== 0}
-                  ></dnd-creature>
+                  ></dnd-combatant-card>
                 `
               );
 

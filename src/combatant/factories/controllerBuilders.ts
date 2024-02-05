@@ -1,7 +1,7 @@
-import { ICombatantController } from "./types";
-import { Combat } from "../common/types";
-import { attributeBonus, d20, dn } from "../common/utils";
-import { getImage } from "../common/ImageFactory";
+import { ICombatantController } from "../types";
+import { Combat } from "../../common/types";
+import { attributeBonus, d20, dn } from "../../common/utils";
+import { getImage } from "../../common/ImageFactory";
 
 export function base(
   fragment: Partial<ICombatantController> &
@@ -26,7 +26,7 @@ export function base(
     damageRoll: function (this: ICombatantController): number {
       return 1;
     },
-    image: getImage(fragment.combatant.type),
+    image: getImage(fragment.combatant.imageId ?? fragment.combatant.type),
     ...fragment,
   };
 }
@@ -57,7 +57,6 @@ export function goblin(
     damageRoll: function (this: ICombatantController): number {
       return dn(6)() + 2;
     },
-    image: getImage(fragment.combatant.type),
     ...fragment,
   });
 }

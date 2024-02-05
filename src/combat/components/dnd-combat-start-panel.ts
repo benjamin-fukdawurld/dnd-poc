@@ -1,8 +1,8 @@
 import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 
-@customElement("dnd-start-combat")
-export class DndMenu extends LitElement {
+@customElement("dnd-combat-start-panel")
+export class DndCombatStartPanel extends LitElement {
   static styles = css`
     .container {
       display: flex;

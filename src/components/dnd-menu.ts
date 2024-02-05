@@ -3,8 +3,7 @@ import { LitElement, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 import { CombatContextObject, combatContext } from "../context";
 
-import "./dnd-start-combat";
-import "./dnd-turn-panel";
+import "../common/components/dnd-log-panel";
 
 @customElement("dnd-menu")
 export class DndMenu extends LitElement {
@@ -25,14 +24,12 @@ export class DndMenu extends LitElement {
 
       margin: 0.5rem;
     }
-
     .logs {
+      width: 50%;
+      height: calc(100% - 1.5rem);
       overflow: auto;
-      flex-grow: 1;
-      border: solid 1px black;
-      display: flex;
-      flex-flow: column nowrap;
 
+      border: solid 1px black;
       margin: 0.5rem;
       padding: 0.25rem 0.125rem;
     }
@@ -43,9 +40,7 @@ export class DndMenu extends LitElement {
 
   render() {
     return html` <div class="container">
-      <div class="logs">
-        ${this.context.controller.logs.map((msg) => html`<pre>${msg}</pre>`)}
-      </div>
+      <dnd-log-panel class="logs"></dnd-log-panel>
       <nav>${this.context.controller.getMenu(this.context.combat)}</nav>
     </div>`;
   }

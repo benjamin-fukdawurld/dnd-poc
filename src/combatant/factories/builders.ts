@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { Combatant } from "../common/types";
+import { Combatant } from "../../common/types";
 
 export function character(fragment: Partial<Combatant>): Combatant {
   const base: Combatant = {
@@ -41,6 +41,7 @@ export function goblin(fragment?: Partial<Combatant>): Combatant {
   const base: Combatant = {
     id: uuid(),
     type: "goblin",
+    imageId: "goblin",
     name: "Goblin",
     actions: ["attack"],
     hitPoints: {

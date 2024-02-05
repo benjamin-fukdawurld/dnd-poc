@@ -2,10 +2,10 @@ import {
   CombatantBuilder,
   CombatantControllerBuilder,
   ICombatantController,
-} from "./types";
+} from "../types";
 import * as builders from "./builders";
 import * as controllerBuilders from "./controllerBuilders";
-import { Combatant } from "../common/types";
+import { Combatant } from "../../common/types";
 
 export default class CombatantFactory {
   private _builders: Map<string, CombatantBuilder>;

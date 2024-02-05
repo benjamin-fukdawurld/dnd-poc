@@ -34,6 +34,8 @@ export interface Combatant {
   actions: ActionName[];
   attributes: Attributes;
   availableActions: Range;
+
+  imageId?: string;
 }
 
 export type Combat = {

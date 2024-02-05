@@ -3,19 +3,23 @@ import { customElement, property } from "lit/decorators.js";
 import { unsafeSVG } from "lit/directives/unsafe-svg.js";
 
 import { consume } from "@lit/context";
-import { CombatContextObject, combatContext } from "../context";
-import { ICombatantController } from "../combatant/types";
 
-import shield from "../assets/images/shield.svg?raw";
-import heart from "../assets/images/heart.svg?raw";
-import { Combatant } from "../common/types";
+import { CombatContextObject, combatContext } from "../../context";
+import { ICombatantController } from "../types";
+import { Combatant } from "../../common/types";
 
-@customElement("dnd-creature")
-export class DndCreature extends LitElement {
+import shield from "../../assets/images/shield.svg?raw";
+import heart from "../../assets/images/heart.svg?raw";
+import { getImage } from "../../common/ImageFactory";
+
+@customElement("dnd-combatant-card")
+export class DndCombatantCard extends LitElement {
   static styles = css`
     article {
+      position: relative;
       border: outset 3px lightgray;
       padding: 1rem 0.5rem;
+      background-color: #bbbbbb;
     }
 
     article.active {
@@ -37,6 +41,23 @@ export class DndCreature extends LitElement {
       height: 6rem;
       object-fit: contain;
       object-position: center;
+    }
+
+    .order {
+      position: absolute;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      margin: 0.125rem;
+      top: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: blue;
+      border: solid 2px white;
+      color: white;
+      font-weight: 700;
     }
 
     .info {
@@ -105,10 +126,28 @@ export class DndCreature extends LitElement {
   @property({ type: Boolean })
   noinfo?: boolean;
 
-  get combatant(): Combatant | undefined {
-    return this.context.combat.combatants.find(
+  get combatant():
+    | {
+        combatant: Combatant;
+        controller?: ICombatantController;
+        order?: number;
+      }
+    | undefined {
+    const index = this.context.combat.combatants.findIndex(
       (current) => current.id === this.creatureId
     );
+
+    if (index === -1) {
+      return;
+    }
+
+    const combatant = this.context.combat.combatants[index];
+    const controller = this.context.controller.getCombatantController(
+      combatant.id
+    );
+    const order = this.context.combat.order?.findIndex((val) => val === index);
+
+    return { combatant, controller, order: order < 0 ? undefined : order };
   }
 
   get combatantController(): ICombatantController | undefined {
@@ -127,14 +166,15 @@ export class DndCreature extends LitElement {
   }
 
   render() {
-    const combatant = this.combatant;
-    const controller = this.combatantController;
-    if (!combatant || !controller) {
+    const controls = this.combatant;
+    if (!controls) {
       return nothing;
     }
+    const { combatant, order } = controls;
 
     const isActive = this.isActive(combatant);
-    const isTarget = this.context.controller.target === this.combatant;
+    const isTarget = this.context.controller.target === combatant;
+
     const health = Math.max(
       0,
       Math.min(
@@ -175,7 +215,10 @@ export class DndCreature extends LitElement {
         );
       }}
     >
-      ${controller.image}
+      ${order === undefined
+        ? nothing
+        : html`<div class="order">${order + 1}</div>`}
+      ${combatant.imageId ? getImage(combatant.imageId) : nothing}
       <h4 class="name">${combatant.name}</h4>
       <div class="healthbar">
         <div

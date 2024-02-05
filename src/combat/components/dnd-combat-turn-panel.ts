@@ -1,14 +1,13 @@
 import { consume } from "@lit/context";
 import { LitElement, html, css } from "lit";
 import { customElement } from "lit/decorators.js";
-import { CombatContextObject, combatContext } from "../context";
 
-import "./dnd-combat-order";
-import "./dnd-turn-info";
-import "./dnd-character-panel";
+import { CombatContextObject, combatContext } from "../../context";
 
-@customElement("dnd-turn-panel")
-export default class TurnMenu extends LitElement {
+import "../../components/dnd-character-panel";
+
+@customElement("dnd-combat-turn-panel")
+export default class DndCombatTurnPanel extends LitElement {
   static styles = [
     css`
       .container {
@@ -41,8 +40,6 @@ export default class TurnMenu extends LitElement {
 
   override render() {
     return html`<div class="container">
-      <dnd-combat-order></dnd-combat-order>
-      <dnd-turn-info></dnd-turn-info>
       <div class="content">
         <dnd-character-panel></dnd-character-panel>
       </div>
