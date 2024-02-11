@@ -1,5 +1,5 @@
 import { HTMLTemplateResult, nothing } from "lit";
-import { Combat, Combatant } from "../common/types";
+import { AttributeName, Combat, Combatant, Position } from "../common/types";
 import { CombatantAction } from "../actions/types";
 
 export interface ICombatantController {
@@ -19,6 +19,9 @@ export interface ICombatantController {
   initiativeRoll: (combat: Combat) => number;
   attackRoll: (combat: Combat) => number;
   damageRoll: (combat: Combat) => number;
+  savingThrow: (attribute: AttributeName, combat: Combat) => number;
+
+  squaredDistance: (position: Position) => number;
 }
 
 export type CombatantBuilder = (fragment: Partial<Combatant>) => Combatant;

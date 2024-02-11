@@ -1,19 +1,30 @@
 import { HTMLTemplateResult, html, nothing } from "lit";
-import { ifDefined } from "lit/directives/if-defined.js";
 
 import { attributeBonus, d20 } from "../common/utils";
 import Logger from "../common/Logger";
 import { ICombatController } from "./types";
 import { ICombatantController } from "../combatant/types";
-import { ActionName, Combat, Combatant } from "../common/types";
-import { CombatantAction } from "../actions/types";
+import { Combat, Combatant } from "../common/types";
+import { ActionName } from "../actions/types";
 import { combatantFactory } from "../combatant/factories/CombatantFactory";
 import CombatFactory from "./factories/CombatFactory";
+
+import "../actions/components/dnd-action-attack";
+import "../actions/components/dnd-action-cure-wounds";
+import "../actions/components/dnd-action-fireball";
 
 const logger = Logger.instance;
 
 export default class CombatController implements ICombatController {
   private _combatantControllers: ICombatantController[] = [];
+
+  get logs(): HTMLTemplateResult[] {
+    return Logger.logs;
+  }
+
+  get combatantControllers(): ICombatantController[] {
+    return this._combatantControllers;
+  }
 
   isStarted(combat: Combat): boolean {
     return combat.order.length !== 0;
@@ -90,7 +101,7 @@ export default class CombatController implements ICombatController {
       logger.info(`${controller.combatant.name} initiative score: ${roll}`);
 
       return {
-        roll: controller.initiativeRoll(combat),
+        roll,
         controller,
         index,
       };
@@ -129,14 +140,6 @@ export default class CombatController implements ICombatController {
     return combat;
   }
 
-  get logs(): HTMLTemplateResult[] {
-    return Logger.logs;
-  }
-
-  get combatantControllers(): ICombatantController[] {
-    return this._combatantControllers;
-  }
-
   getMenu(combat: Combat) {
     if (!this.isStarted(combat)) {
       return CombatFactory.instance.menu("order");
@@ -152,40 +155,27 @@ export default class CombatController implements ICombatController {
   getCombatantActionWidget(
     action: ActionName,
     combatant: Combatant,
-    combat: Combat
+    _: Combat
   ) {
-    const controller = this.getActiveCombatant(combat);
-    const target = controller?.target;
+    switch (action) {
+      case "attack":
+        return html`<dnd-action-attack
+          combatantId=${combatant.id}
+        ></dnd-action-attack>`;
 
-    return html`<div>
-      ${action}
-      <input
-        type="text"
-        readonly
-        placeholder="target"
-        value=${ifDefined(target?.name)}
-      />
-      <button
-        ?disabled=${!combatant.availableActions.value || !target}
-        @click=${(e: Event) => {
-          e.stopPropagation();
-          e.target!.dispatchEvent(
-            new CustomEvent<CombatantAction>("combatantaction", {
-              bubbles: true,
-              composed: true,
-              detail: {
-                action: action,
-                source: combatantFactory.get(combatant.id)!,
-                combat: combat,
-                target: combatantFactory.get(target!.id)!,
-              },
-            })
-          );
-        }}
-      >
-        use
-      </button>
-    </div>`;
+      case "cure wounds":
+        return html`<dnd-action-cure-wounds
+          combatantId=${combatant.id}
+        ></dnd-action-cure-wounds>`;
+
+      case "fireball":
+        return html`<dnd-action-fireball
+          combatantId=${combatant.id}
+        ></dnd-action-fireball>`;
+
+      default:
+        return nothing;
+    }
   }
 
   getActiveCombatant(combat: Combat): ICombatantController | undefined {

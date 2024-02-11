@@ -18,9 +18,10 @@ export class DndCombatantCard extends LitElement {
   static styles = css`
     article {
       position: relative;
-      border: outset 3px lightgray;
+      border: outset 3px #9994;
       padding: 1rem 0.5rem;
-      background-color: #bbbbbb;
+      background-color: #bbba;
+      backdrop-filter: blur(6px);
     }
 
     article.active {

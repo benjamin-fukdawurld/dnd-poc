@@ -1,3 +1,5 @@
+import { ActionName } from "../actions/types";
+
 export type CappedValue = {
   value: number;
   max: number;
@@ -5,6 +7,11 @@ export type CappedValue = {
 
 export type Range = CappedValue & {
   min: number;
+};
+
+export type Position = {
+  x: number;
+  y: number;
 };
 
 export const LogLevelNames = ["debug", "info", "warn", "error"] as const;
@@ -22,18 +29,17 @@ export type AttributeName = (typeof AttributeNames)[number];
 
 export type Attributes = Record<AttributeName, number>;
 
-export const ActionNames = ["attack", "cure wounds"] as const;
-export type ActionName = (typeof ActionNames)[number];
-
 export interface Combatant {
   id: string;
   type: string;
   name: string;
+  position: Position;
   hitPoints: Range;
   armorClass: number;
   actions: ActionName[];
   attributes: Attributes;
-  availableActions: Range;
+  availableActions: CappedValue;
+  remainingMovement: CappedValue;
 
   imageId?: string;
 }

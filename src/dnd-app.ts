@@ -13,6 +13,8 @@ import { ICombatController } from "./combat/types";
 import CombatController from "./combat/CombatController";
 import { combatantFactory } from "./combatant/factories/CombatantFactory";
 import { CombatantAction } from "./actions/types";
+import { ref, Ref, createRef } from "lit/directives/ref.js";
+import TerrainController from "./terrain/TerrainController";
 
 const characters = [
   combatantFactory.create("character", "character", {
@@ -20,6 +22,11 @@ const characters = [
       name: "Paluche",
       type: "character",
       imageId: "paladin",
+      position: {
+        x: -2,
+        y: -10,
+      },
+      actions: ["attack", "cure wounds", "fireball"],
     },
   })!,
   combatantFactory.create("character", "character", {
@@ -27,22 +34,36 @@ const characters = [
       name: "Robert",
       type: "character",
       imageId: "rogue",
+      position: {
+        x: 2,
+        y: -10,
+      },
     },
   })!,
   combatantFactory.create("goblin", "goblin", {
     combatant: {
       name: "Goblin",
+      position: {
+        x: -2,
+        y: 10,
+      },
     },
   })!,
   combatantFactory.create("goblin", "goblin", {
     combatant: {
       name: "Goblin",
       imageId: "goblin2",
+      position: {
+        x: 2,
+        y: 10,
+      },
     },
   })!,
 ];
 
 characters.map((ctrl) => combatantFactory.add(ctrl));
+
+let terrain: TerrainController | undefined;
 
 @customElement("dnd-app")
 export class DndApp extends LitElement {
@@ -56,11 +77,15 @@ export class DndApp extends LitElement {
       flex-flow: column nowrap;
     }
     main {
-      display: flex;
-      flex-flow: row wrap;
-      justify-content: space-between;
+      position: relative;
       flex-grow: 1;
-      padding: 0.5rem 1rem;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      width: calc(100% - 0.25rem);
+      height: calc(100% - 0.375rem);
     }
 
     .group {
@@ -70,10 +95,36 @@ export class DndApp extends LitElement {
       align-items: center;
     }
 
+    .party {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 10;
+    }
+
+    .enemies {
+      position: absolute;
+      right: 0;
+      top: 0;
+      z-index: 10;
+    }
+
     .menu {
-      height: 35%;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      box-sizing: border-box;
+      height: 25%;
+      position: absolute;
+      bottom: 0;
+      background-color: #fffa;
+      backdrop-filter: blur(6px);
     }
   `;
+
+  canvasRef: Ref<HTMLCanvasElement> = createRef();
+  canvasCtx?: CanvasRenderingContext2D;
 
   @provide({ context: combatContext })
   context: CombatContextObject = {
@@ -115,61 +166,82 @@ export class DndApp extends LitElement {
     this.combat = this.controller.end(this.combat);
   }
 
+  firstUpdated() {
+    this.canvasCtx = this.canvasRef.value?.getContext("2d") ?? undefined;
+    if (!this.canvasCtx) {
+      Logger.instance.error("cannot load canvas 2D context");
+      return;
+    }
+
+    const ctx = this.canvasCtx;
+
+    ctx.canvas.width = ctx.canvas.offsetWidth;
+    ctx.canvas.height = ctx.canvas.offsetHeight;
+    terrain = new TerrainController(this.canvasCtx, this.combat);
+    terrain.draw(this.combat);
+  }
+
+  handleCombatantSelected(combatant: Combatant) {
+    const controller = this.controller.getActiveCombatant(this.combat);
+    if (!controller) {
+      return;
+    }
+
+    if (combatant === controller.target) {
+      controller.target = undefined;
+    } else {
+      controller.target = combatant;
+    }
+
+    this.context = { ...this.context };
+  }
+
+  getCombatantCard(id: string, noinfo = false) {
+    return html`<dnd-combatant-card
+      creatureId=${id}
+      ?noinfo=${noinfo}
+    ></dnd-combatant-card>`;
+  }
+
+  getGroupCards(group: string[], noinfo = false) {
+    const combatants = group.map((id) => this.getCombatantCard(id, noinfo));
+    return html`<aside class=${`group ${noinfo ? "enemies" : "party"}`}>
+      ${combatants}
+    </aside>`;
+  }
+
   render() {
     return html`
       <div class="app">
         <dnd-combat-header></dnd-combat-header>
         <main
-          @combatantselected=${(e: CustomEvent<Combatant>) => {
-            const selected = e.detail;
-            const controller = this.controller.getActiveCombatant(this.combat);
-            if (!controller) {
-              return;
-            }
-
-            if (selected === controller.target) {
-              controller.target = undefined;
-            } else {
-              controller.target = selected;
-            }
-
-            this.controller = this.controller;
-          }}
+          @combatantselected=${(e: CustomEvent<Combatant>) =>
+            this.handleCombatantSelected(e.detail)}
         >
-          ${this.combat.groups.map((group, group_index) => {
-            const combatants = group
-              .map((id) => combatantFactory.get(id))
-              .map(
-                (controller) => html`
-                  <dnd-combatant-card
-                    creatureId=${controller!.combatant.id}
-                    ?noinfo=${group_index !== 0}
-                  ></dnd-combatant-card>
-                `
-              );
-
-            return html` <div class="group">${combatants}</div> `;
-          })}
+          <canvas ${ref(this.canvasRef)} width="640" height="480"></canvas>
+          ${this.combat.groups.map((group, group_index) =>
+            this.getGroupCards(group, group_index !== 0)
+          )}
+          <dnd-menu
+            class="menu"
+            @combatantaction=${({
+              detail: action,
+            }: CustomEvent<CombatantAction>) => {
+              this.combat = action.source.handleAction(action);
+            }}
+            @startcombat=${() => {
+              const logger = Logger.instance;
+              this.combat = this.controller.rollInitiatives(this.combat);
+              logger.info(`Begin round ${0}`);
+              logger.separator();
+              this.combat = this.controller.beginTurn(this.combat);
+            }}
+            @endturn=${() => {
+              this.combat = this.controller.endTurn(this.combat);
+              this.combat = this.controller.beginTurn(this.combat);
+            }}
+          ></dnd-menu>
         </main>
-        <dnd-menu
-          class="menu"
-          @combatantaction=${({
-            detail: action,
-          }: CustomEvent<CombatantAction>) => {
-            this.combat = action.source.handleAction(action);
-          }}
-          @startcombat=${() => {
-            const logger = Logger.instance;
-            this.combat = this.controller.rollInitiatives(this.combat);
-            logger.info(`Begin round ${0}`);
-            logger.separator();
-            this.combat = this.controller.beginTurn(this.combat);
-          }}
-          @endturn=${() => {
-            this.combat = this.controller.endTurn(this.combat);
-            this.combat = this.controller.beginTurn(this.combat);
-          }}
-        ></dnd-menu>
       </div>
     `;
   }

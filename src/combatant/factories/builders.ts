@@ -6,6 +6,10 @@ export function character(fragment: Partial<Combatant>): Combatant {
     id: uuid(),
     type: "character",
     name: "Character",
+    position: {
+      x: 0,
+      y: 0,
+    },
     actions: ["attack", "cure wounds"],
     hitPoints: {
       min: 0,
@@ -22,9 +26,12 @@ export function character(fragment: Partial<Combatant>): Combatant {
       charisma: 15,
     },
     availableActions: {
-      min: 0,
       max: 2,
       value: 2,
+    },
+    remainingMovement: {
+      max: 6,
+      value: 6,
     },
   };
 
@@ -43,6 +50,10 @@ export function goblin(fragment?: Partial<Combatant>): Combatant {
     type: "goblin",
     imageId: "goblin",
     name: "Goblin",
+    position: {
+      x: 0,
+      y: 0,
+    },
     actions: ["attack"],
     hitPoints: {
       min: 0,
@@ -59,9 +70,12 @@ export function goblin(fragment?: Partial<Combatant>): Combatant {
       charisma: 8,
     },
     availableActions: {
-      min: 0,
       max: 1,
       value: 1,
+    },
+    remainingMovement: {
+      max: 6,
+      value: 6,
     },
   };
 

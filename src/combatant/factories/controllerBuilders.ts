@@ -1,10 +1,10 @@
 import { ICombatantController } from "../types";
-import { Combat } from "../../common/types";
+import { AttributeName, Combat, Position } from "../../common/types";
 import { attributeBonus, d20, dn } from "../../common/utils";
 import { getImage } from "../../common/ImageFactory";
 import { CombatantAction } from "../../actions/types";
 import Logger from "../../common/Logger";
-import { attack, cureWounds } from "../../actions/factories/actions";
+import { attack, cureWounds, fireball } from "../../actions/factories/actions";
 
 export function base(
   fragment: Partial<ICombatantController> &
@@ -45,13 +45,16 @@ export function base(
         );
       }
 
-      if (action.action === "attack") {
-        attack(action);
-      } else if (action.action === "cure wounds") {
-        cureWounds(action);
-      }
+      switch (action.action) {
+        case "attack":
+          return attack(action);
 
-      return action.combat;
+        case "cure wounds":
+          return cureWounds(action);
+
+        case "fireball":
+          return fireball(action);
+      }
     },
 
     beginTurn: function (this: ICombatantController, combat: Combat): Combat {
@@ -71,6 +74,23 @@ export function base(
     },
     damageRoll: function (this: ICombatantController): number {
       return 1;
+    },
+    squaredDistance: function (
+      this: ICombatantController,
+      position: Position
+    ): number {
+      const v = {
+        x: position.x - this.combatant.position.x,
+        y: position.y - this.combatant.position.y,
+      };
+
+      return v.x ** 2 + v.y ** 2;
+    },
+    savingThrow: function (
+      this: ICombatantController,
+      attribute: AttributeName
+    ): number {
+      return d20() + attributeBonus(this.combatant.attributes[attribute]);
     },
     image: getImage(fragment.combatant.imageId ?? fragment.combatant.type),
     ...fragment,

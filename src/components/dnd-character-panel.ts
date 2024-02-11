@@ -108,18 +108,31 @@ export default class CharacterPanel extends LitElement {
         return html`<h5>Actions</h5>
           <div>
             remaining:
-            ${combatant.availableActions.value}/${
-          combatant.availableActions.max
-        }
+            ${combatant.availableActions.value}/${combatant.availableActions
+              .max}
           </div>
-            ${combatant.actions.map((current) =>
-              this.context.controller.getCombatantActionWidget(
-                current,
-                combatant,
-                this.context.combat
-              )
-            )}
-          </ul>`;
+          ${combatant.actions.map((current) =>
+            this.context.controller.getCombatantActionWidget(
+              current,
+              combatant,
+              this.context.combat
+            )
+          )}`;
+      }
+      case "move": {
+        return html`<h5>Move</h5>
+          <div>
+            remaining:
+            ${combatant.remainingMovement.value}/${combatant.remainingMovement
+              .max}
+            <button>dash</button>
+          </div>
+          <div>
+            destination:
+            <input type="number" value=${combatant.position.x} />
+            <input type="number" value=${combatant.position.y} />
+            <button>go</button>
+          </div> `;
       }
 
       default:
@@ -131,20 +144,28 @@ export default class CharacterPanel extends LitElement {
     return html`<div class="container">
       <div class="tabs">
         <button
-          class=${this.currentTab === "info" ? "active" : ""}
-          @click=${() => {
-            this.currentTab = "info";
-          }}
-        >
-          Info
-        </button>
-        <button
           class=${this.currentTab === "actions" ? "active" : ""}
           @click=${() => {
             this.currentTab = "actions";
           }}
         >
           Actions
+        </button>
+        <button
+          class=${this.currentTab === "move" ? "active" : ""}
+          @click=${() => {
+            this.currentTab = "move";
+          }}
+        >
+          Move
+        </button>
+        <button
+          class=${this.currentTab === "info" ? "active" : ""}
+          @click=${() => {
+            this.currentTab = "info";
+          }}
+        >
+          Info
         </button>
       </div>
       <div class="content">${this.currentContent}</div>
