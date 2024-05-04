@@ -123,26 +123,24 @@ export class DndCombatantCard extends LitElement {
   context!: CombatContextObject;
 
   @property({ type: String })
-  creatureId!: string;
+  combatantId!: string;
 
   @property({ type: Boolean })
   noinfo?: boolean;
 
   get combatant():
     | {
-        combatant: Combatant;
         controller?: ICombatantController;
         order?: number;
       }
     | undefined {
-    const result = combatantFactory.get(this.creatureId);
+    const result = combatantFactory.get(this.combatantId);
     const order = this.context.combat.order.findIndex((index) => {
       return this.context.controller.combatantControllers[index] === result;
     });
 
     return result
       ? {
-          combatant: result.combatant,
           controller: result,
           order: order < 0 ? undefined : order,
         }
@@ -150,7 +148,7 @@ export class DndCombatantCard extends LitElement {
   }
 
   get combatantController(): ICombatantController | undefined {
-    return combatantFactory.get(this.creatureId);
+    return combatantFactory.get(this.combatantId);
   }
 
   isActive(combatant: Combatant): boolean {
@@ -202,7 +200,8 @@ export class DndCombatantCard extends LitElement {
     if (!controls) {
       return nothing;
     }
-    const { combatant, order } = controls;
+    const { controller, order } = controls;
+    const combatant = controller!.combatant;
 
     const activeCombatant = this.context.controller.getActiveCombatant(
       this.context.combat
