@@ -4,7 +4,7 @@ import { provide } from "@lit/context";
 
 import "./combatant/components/dnd-combatant-card";
 import "./combat/components/dnd-combat-header";
-import "./components/dnd-menu";
+import "./layout/dnd-menu";
 
 import { CombatContextObject, combatContext } from "./context";
 import Logger from "./common/Logger";
@@ -115,7 +115,7 @@ export class DndApp extends LitElement {
       left: 0;
       right: 0;
       box-sizing: border-box;
-      height: 25%;
+      max-height: 25%;
       position: absolute;
       bottom: 0;
       background-color: #fffa;
@@ -198,7 +198,7 @@ export class DndApp extends LitElement {
 
   getCombatantCard(id: string, noinfo = false) {
     return html`<dnd-combatant-card
-      creatureId=${id}
+      combatantId=${id}
       ?noinfo=${noinfo}
     ></dnd-combatant-card>`;
   }

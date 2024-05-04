@@ -57,6 +57,12 @@ export default class CombatantFactory {
     return this.combatants.get(id);
   }
 
+  getControllers(
+    pred: (controller: ICombatantController) => boolean = Boolean
+  ) {
+    return [...this.combatants].filter(([_, controller]) => pred(controller));
+  }
+
   create(
     builder: string,
     controller: string,

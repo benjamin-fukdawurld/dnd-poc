@@ -1,38 +1,54 @@
 import { combatantFactory } from "../combatant/factories/CombatantFactory";
 import { ICombatantController } from "../combatant/types";
-import { Combat, Combatant } from "../common/types";
+import { Combat, Position } from "../common/types";
 
 export default class TerrainController {
   width: number;
   height: number;
   tileWidth: number;
   tileHeight: number;
+  offsetX: number;
+  offsetY: number;
+
+  selected?: Position;
 
   constructor(public ctx: CanvasRenderingContext2D, combat: Combat) {
     this.width = ctx.canvas.width;
     this.height = ctx.canvas.height;
     this.tileWidth = 80;
     this.tileHeight = 80;
+    this.offsetX = this.width / 2;
+    this.offsetY = this.height / 2;
+    this.selected = {
+      x: 0,
+      y: 0,
+    };
 
     ctx.canvas.addEventListener("mousemove", (e: MouseEvent) => {
-      const position = {
-        x: e.offsetX - this.tileWidth / 2,
-        y: e.offsetY - this.tileHeight / 2,
-      };
+      this.selected = this.getTile({
+        x: e.offsetX,
+        y: e.offsetY,
+      });
 
       this.draw(combat);
-      ctx.fillStyle = "red";
-      ctx.save();
-      //this.ctx.transform(1, 1, 2, -2, 0, 0);
-      //this.ctx.transform(1 / 2, 1 / 4, -1 / 2, 1 / 4, 0, 0);
-      this.ctx.fillRect(
-        position.x,
-        position.y,
-        this.tileWidth,
-        this.tileHeight
-      );
-      ctx.restore();
     });
+  }
+
+  getTile(position: Position): Position {
+    position = {
+      x: Math.floor(position.x - this.offsetX + this.tileWidth / 2),
+      y: Math.floor(position.y - this.offsetY + this.tileHeight / 2),
+    };
+
+    position.x = position.x / this.tileWidth;
+    position.y = position.y / this.tileHeight;
+    const x = Math.floor(position.x + position.y * 2);
+    const y = Math.floor(position.x + -2 * position.y);
+
+    return {
+      x,
+      y,
+    };
   }
 
   centerCanvas() {
@@ -41,8 +57,8 @@ export default class TerrainController {
       0,
       0,
       1,
-      (this.width - this.tileWidth) / 2,
-      (this.height - this.tileHeight) / 2
+      this.offsetX - this.tileWidth / 2,
+      this.offsetY - this.tileHeight / 2
     );
   }
 
@@ -116,6 +132,10 @@ export default class TerrainController {
       for (let x = -10; x <= 10; ++x) {
         this.drawTile({ x, y, color: (x + y) % 2 === 0 ? "#FFFA" : "#000A" });
       }
+    }
+
+    if (this.selected) {
+      this.drawTile({ x: this.selected.x, y: this.selected.y, color: "#00F" });
     }
 
     this.drawCombatants(combat);
