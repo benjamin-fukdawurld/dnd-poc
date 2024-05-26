@@ -15,3 +15,32 @@ const images = new Map<string, HTMLTemplateResult>([
 export function getImage(id: string) {
   return images.get(id) ?? nothing;
 }
+
+export default class ImageFactory {
+  private images: Map<string, HTMLImageElement>;
+  constructor() {
+    this.images = new Map<string, HTMLImageElement>();
+  }
+
+  async getImage(src: string): Promise<HTMLImageElement> {
+    let image = this.images.get(src);
+    if (image) {
+      return image;
+    }
+
+    image = await ImageFactory.loadImage(src);
+    this.images.set(src, image);
+
+    return image;
+  }
+
+  private static async loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise<HTMLImageElement>((resolve) => {
+      const img = new Image();
+      img.addEventListener("load", () => resolve(img), false);
+      img.src = src;
+    });
+  }
+}
+
+export const imageFactory = new ImageFactory();

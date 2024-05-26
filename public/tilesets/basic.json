@@ -1,0 +1,21 @@
+{
+  "image": "images/tileset.png",
+  "offset": {
+    "x": 1,
+    "y": 1
+  },
+  "gap": {
+    "x": 1,
+    "y": 1
+  },
+  "tiles": {
+    "size": {
+      "width": 16,
+      "height": 16
+    },
+    "numberOfTiles": {
+      "x": 24,
+      "y": 25
+    }
+  }
+}

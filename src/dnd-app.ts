@@ -14,7 +14,7 @@ import CombatController from "./combat/CombatController";
 import { combatantFactory } from "./combatant/factories/CombatantFactory";
 import { CombatantAction } from "./actions/types";
 import { ref, Ref, createRef } from "lit/directives/ref.js";
-import TerrainController from "./terrain/TerrainController";
+import TerrainController from "./terrain/TerrainController_";
 
 const characters = [
   combatantFactory.create("character", "character", {
